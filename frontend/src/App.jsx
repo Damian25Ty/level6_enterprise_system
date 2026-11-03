@@ -19,7 +19,7 @@ function App() {
   // --- CONNECT WEBSOCKET PIPELINE SECURELY ---
   const connectToRealTimeEngine = (token, name) => {
     // Connect directly to the backend port, injecting the verified token passport
-    const socket = io('http://localhost:5000', {
+    const socket = io('https://enterprise-bank-backend.onrender.com', {
       auth: { token: token }
     });
 
@@ -64,7 +64,7 @@ function App() {
       alert("Please fill out all credentials.");
       return;
     }
-    fetch('http://localhost:5000/api/signup', {
+    fetch('https://enterprise-bank-backend.onrender.com/api/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: username, password })
@@ -81,7 +81,7 @@ function App() {
   };
 
   const handleLogin = () => {
-    fetch('http://localhost:5000/api/login', {
+    fetch('https://enterprise-bank-backend.onrender.com/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: username, password })
