@@ -13,21 +13,13 @@ const app = express();
 const PORT = process.env.PORT || 5000; 
 const JWT_SECRET = "enterprise_level_6_secret_key_2026";
 
-app.use(express.json());
 // --- FIXED FOR LIVE PRODUCTION: ALLOW VERCEL FRONTEND LINKS ---
 // We use origin: true to automatically accept connection requests from your live deployed Vercel domain!
 app.use(cors({ 
     origin: true,
     credentials: true
-}));
-
-const server = http.createServer(app);
-const io = new Server(server, {
-    cors: { 
-        origin: true, // Dynamically maps and authorizes your public React app port entries
-        methods: ["GET", "POST"] 
-    }
-});
+})); // Unlocks connection tracks from React's port
+app.use(express.json());
 
 // --- TRACK B: SWAPPING CORE RELATIONAL DIALECT ENGINES ---
 // Connect directly to the local Postgres service instance listening on standard port 5432
@@ -60,6 +52,13 @@ const Account = sequelize.define('Account', {
 User.hasOne(Account, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Account.belongsTo(User, { foreignKey: 'userId' });
 
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { 
+        origin: true, // Dynamically maps and authorizes your public React app port entries
+        methods: ["GET", "POST"] 
+    }
+});
 
 // --- HTTP BACKEND ROUTE HANDLING LOGIC ---
 app.post('/api/signup', async (req, res) => {
