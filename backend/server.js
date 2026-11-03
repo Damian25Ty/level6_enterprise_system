@@ -1,3 +1,4 @@
+require('dotenv').config();// --- TRACK B: SWAPPING CORE RELATIONAL DIALECT ENGINES ---. must be line 1
 const express = require('express');
 const cor = require('cors');
 const { Sequelize, DataTypes } = require('sequelize');
@@ -7,7 +8,9 @@ const http = require('http');
 const { Server } = require('socket.io');
 
 const app = express();
-const PORT = 5000;
+// --- UPDATED FOR PRODUCTION PORT BINDING ---
+// Use the port Render assigns us dynamically, or fall back to 5000 on your local laptop
+const PORT = process.env.PORT || 5000; 
 const JWT_SECRET = "enterprise_level_6_secret_key_2026";
 
 app.use(cor({ origin: "http://localhost:5173" })); // Unlocks connection tracks from React's port
@@ -15,12 +18,21 @@ app.use(express.json());
 
 // --- TRACK B: SWAPPING CORE RELATIONAL DIALECT ENGINES ---
 // Connect directly to the local Postgres service instance listening on standard port 5432
-const sequelize = new Sequelize('postgres', 'postgres', 'justevi1616@$', {
-    host: 'localhost',
-    port: 5432,
+// --- UPDATED FOR CLOUD PRODUCTION DEPLOYMENT ---
+// If a cloud database URL exists, use it! Otherwise, fall back to your local laptop database.
+const databaseUrl = process.env.DATABASE_URL || 'postgres://postgres:root1234@localhost:5432/postgres';
+
+const sequelize = new Sequelize(databaseUrl, {
     dialect: 'postgres',
-    logging: false
+    logging: false,
+    dialectOptions: process.env.DATABASE_URL ? {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false // Required for secure cloud handshakes on Render
+        }
+    } : {}
 });
+
 
 // Database Schemas
 const User = sequelize.define('User', {
