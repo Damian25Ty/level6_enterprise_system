@@ -13,10 +13,13 @@ const app = express();
 const PORT = process.env.PORT || 5000; 
 const JWT_SECRET = "enterprise_level_6_secret_key_2026";
 
-// --- FIXED FOR LIVE PRODUCTION: ALLOW VERCEL FRONTEND LINKS ---
-// We use origin: true to automatically accept connection requests from your live deployed Vercel domain!
+// --- FIXED FOR LIVE PRODUCTION: STABLE DYNAMIC CORS ---
+// Express CORS config
 app.use(cors({ 
-    origin: true,
+    origin: function(origin, callback) {
+        // Allows any incoming web request origin to bypass the block safely in production
+        callback(null, true);
+    },
     credentials: true
 })); // Unlocks connection tracks from React's port
 app.use(express.json());
@@ -53,10 +56,16 @@ User.hasOne(Account, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Account.belongsTo(User, { foreignKey: 'userId' });
 
 const server = http.createServer(app);
+
+//socket.io CORS config
 const io = new Server(server, {
     cors: { 
-        origin: true, // Dynamically maps and authorizes your public React app port entries
-        methods: ["GET", "POST"] 
+        origin: function(origin, callback) {
+            // Allows your Vercel web socket tracks to attach cleanly without crashing
+            callback(null, true);
+        },
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
 
