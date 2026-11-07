@@ -1,6 +1,6 @@
-require('dotenv').config();// --- TRACK B: SWAPPING CORE RELATIONAL DIALECT ENGINES ---. must be line 1
+require('dotenv').config(); // MUST BE LINE 1
 const express = require('express');
-const cor = require('cors');
+const cors = require('cors');
 const { Sequelize, DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -8,23 +8,17 @@ const http = require('http');
 const { Server } = require('socket.io');
 
 const app = express();
-// --- UPDATED FOR PRODUCTION PORT BINDING ---
-// Use the port Render assigns us dynamically, or fall back to 5000 on your local laptop
-const PORT = process.env.PORT || 5000; 
+const PORT = process.env.PORT || 5000;
 const JWT_SECRET = "enterprise_level_6_secret_key_2026";
 
-// --- FIXED FOR LIVE PRODUCTION: STABLE DYNAMIC CORS ---
-// Express CORS config
+// Stable CORS integration for HTTP traffic
 app.use(cors({ 
     origin: true,
     credentials: true
-})); // Unlocks connection tracks from React's port
+}));
 app.use(express.json());
 
-// --- TRACK B: SWAPPING CORE RELATIONAL DIALECT ENGINES ---
-// Connect directly to the local Postgres service instance listening on standard port 5432
-// --- UPDATED FOR CLOUD PRODUCTION DEPLOYMENT ---
-// If a cloud database URL exists, use it! Otherwise, fall back to your local laptop database.
+// --- PRODUCTION DATABASE INTEGRATION ---
 const databaseUrl = process.env.DATABASE_URL || 'postgres://postgres:root1234@localhost:5432/postgres';
 
 const sequelize = new Sequelize(databaseUrl, {
@@ -33,11 +27,10 @@ const sequelize = new Sequelize(databaseUrl, {
     dialectOptions: process.env.DATABASE_URL ? {
         ssl: {
             require: true,
-            rejectUnauthorized: false // Required for secure cloud handshakes on Render
+            rejectUnauthorized: false // Bypasses self-signed certificate blocks on cloud providers
         }
     } : {}
 });
-
 
 // Database Schemas
 const User = sequelize.define('User', {
@@ -46,24 +39,23 @@ const User = sequelize.define('User', {
 });
 
 const Account = sequelize.define('Account', {
-    balance: { type: DataTypes.FLOAT, defaultValue: 100.00 } // $100 baseline seed
+    balance: { type: DataTypes.FLOAT, defaultValue: 100.00 }
 });
 
 User.hasOne(Account, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Account.belongsTo(User, { foreignKey: 'userId' });
 
+// Create the unified servers
 const server = http.createServer(app);
-
-//socket.io CORS config
 const io = new Server(server, {
     cors: { 
-        origin:"*", 
+        origin: true, // Automatically accepts connections from your Vercel link safely
         methods: ["GET", "POST"],
         credentials: true
     }
 });
 
-// --- HTTP BACKEND ROUTE HANDLING LOGIC ---
+// --- HTTP ROUTE HANDLERS ---
 app.post('/api/signup', async (req, res) => {
     try {
         const { name, password } = req.body;
@@ -95,7 +87,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// --- WEBSOCKET PASSPORT MIDDLEWARE HANDSHAKE ---
+// --- WEBSOCKET LIFECYCLE ---
 io.use((socket, next) => {
     const token = socket.handshake.auth.token;
     if (!token) return next(new Error("Session verification rejected. Passport missing."));
@@ -114,13 +106,13 @@ io.on('connection', async (socket) => {
     const userId = socket.user.userId;
     onlineRegistry[name] = socket.id;
 
-    console.log(`📡 Enterprise Link Activated for: ${name}`);
+    try {
+        const ledgerRow = await Account.findOne({ where: { userId } });
+        socket.emit('balance state', ledgerRow ? ledgerRow.balance : 0.00);
+    } catch (e) {
+        console.error("Failed fetching connection balance state:", e);
+    }
 
-    // Fetch initial balance state from persistent Postgres row arrays
-    const ledgerRow = await Account.findOne({ where: { userId } });
-    socket.emit('balance state', ledgerRow ? ledgerRow.balance : 0.00);
-
-    // REAL-TIME TRANSACTION ENGINE
     socket.on('submit transaction', async (payload) => {
         try {
             const { targetUser, amountStr } = payload;
@@ -138,14 +130,12 @@ io.on('connection', async (socket) => {
 
             const receiverBalanceRow = await Account.findOne({ where: { userId: receiverProfile.id } });
 
-            // Atomic balance modifications on Postgres table space rows
             senderBalanceRow.balance -= amount;
             receiverBalanceRow.balance += amount;
 
             await senderBalanceRow.save();
             await receiverBalanceRow.save();
 
-            // Fire real-time responses down specific WebSocket tracks instantly
             socket.emit('balance state', senderBalanceRow.balance);
             socket.emit('alert success', `Transferred $${amount.toFixed(2)} cleanly to ${targetUser}.`);
 
@@ -162,9 +152,21 @@ io.on('connection', async (socket) => {
     socket.on('disconnect', () => { delete onlineRegistry[name]; });
 });
 
-// Using sequelize.sync() temporarily here to verify connectivity instantly on initial initialization!
-sequelize.sync().then(() => {
-    server.listen(PORT, () => {
-        console.log(`💎 Enterprise Postgres backend running cleanly at http://localhost:${PORT}`);
-    });
-});
+// Explicit startup initialization handler with connection logs
+async function startServer() {
+    try {
+        await sequelize.authenticate(); // Verify link to cloud PostgreSQL
+        console.log('⚡ Connected securely to cloud PostgreSQL infrastructure.');
+        
+        await sequelize.sync(); // Build tables cleanly
+        
+        server.listen(PORT, () => {
+            console.log(`💎 Cloud cluster server running cleanly on port ${PORT}`);
+        });
+    } catch (error) {
+        console.error('❌ Failed initializing server cluster engine:', error);
+        process.exit(1); // Safely exit if database credentials fail
+    }
+}
+
+startServer();
