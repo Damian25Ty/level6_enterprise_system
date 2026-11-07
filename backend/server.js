@@ -16,10 +16,7 @@ const JWT_SECRET = "enterprise_level_6_secret_key_2026";
 // --- FIXED FOR LIVE PRODUCTION: STABLE DYNAMIC CORS ---
 // Express CORS config
 app.use(cors({ 
-    origin: function(origin, callback) {
-        // Allows any incoming web request origin to bypass the block safely in production
-        callback(null, true);
-    },
+    origin: true,
     credentials: true
 })); // Unlocks connection tracks from React's port
 app.use(express.json());
@@ -60,10 +57,7 @@ const server = http.createServer(app);
 //socket.io CORS config
 const io = new Server(server, {
     cors: { 
-        origin: function(origin, callback) {
-            // Allows your Vercel web socket tracks to attach cleanly without crashing
-            callback(null, true);
-        },
+        origin:"*", 
         methods: ["GET", "POST"],
         credentials: true
     }
